@@ -72,7 +72,7 @@ using namespace std;
 /* boolean flags */
 typedef enum Boolean
 { FALSE = 0, TRUE = 1, FAIL = 0, SUCCEED = 1, OK = 1, NO = 0, YES = 1, NOMSG =
-    0, MSG = 1, OFF = 0, ON = 1 } BOOLEAN
+    0, MSG = 1, OFF = 0, ON = 1 } BOOLEAN;
 /*
 # $Header: /home/ralph/progs/concordance/RCS/alphalst.h,v 0.2 1996/11/23 00:53:01 ralph Exp ralph $
 # $Date: 1996/11/23 00:53:01 $
@@ -114,7 +114,7 @@ class CharCt
   long useAmt;			//the number of times the character was used in a file
   float percentUse;		//percentage of total characters used
 
-  CharCt (void):character ('\0'), useamt (0), percentUse (0.0)
+  CharCt (void):character ('\0'), useAmt (0), percentUse (0.0)
   {
   }
   void incChar (void)
@@ -134,13 +134,13 @@ class CharCt
   int operator == (CharCt & cc);
   int operator < (CharCt & cc);
   int operator > (CharCt & cc);
-  vod saveChar (FILE * fp);
+  void saveChar (FILE * fp);
   void loadChar (FILE  fp);
 
 public:
   friend class CharCtVector;
-  friend istream & operator<< (istream & is, CharCt & cc);
-  friend ostream & operator>> (ostream & os, CharCt & cc);
+  friend istream & operator>> (istream & is, CharCt & cc);
+  friend ostream & operator<< (ostream & os, CharCt & cc);
 };
 
 //***** class CharCtVector *********************************************************
@@ -153,12 +153,12 @@ class CharCtVector
   long totAlphaNums;
 public:
   CharCtVector (void);
-  CharCtVector (CharCtVector & ccv)
+  CharCtVector (CharCtVector & ccv);
   void incChar (int ch);	//increment character ch
   void doPercentages (void);	//set percentages of total alphanumeric characters for all characters
   CharCt & operator[] (int elem);
   friend ostream & operator<< (ostream & os, CharCtVector & ccv);
-}
+};
 
 /*
 # $Header: /home/ralph/progs/concordance/RCS/word.h,v 0.3 1996/11/23 00:51:37 ralph Exp ralph $
@@ -209,7 +209,7 @@ class Locus
   Locus & operator= (unsigned int lc);
   unsigned int getLoc (void) const
   {
-    return 0;
+    return loc;
   }				//return a line number
   Locus *getNxt (void)
   {
@@ -222,7 +222,7 @@ class Locus
   friend istream & operator>> (istream & is, Word & wrd);
   friend ostream & operator<< (ostream & os, Word & wrd);
   friend class Word;		//Word class manipulates the list of loci
-}
+};
 
 //-----  class Word ------------------------------------------------------
 
@@ -259,8 +259,8 @@ class Word
   void incWord (unsigned int locus);	//increment the number of times a word is used and add the locus of the word
   void saveWord (FILE * fp);	//save a word to disk
   Word *loadWord (FILE * fp);	//load a word from disk
-  friend istream & operator<< (istream & is, Word & wrd);
-  friend ostream & operator>> (ostream & os, Word & wrd);
+  friend istream & operator>> (istream & is, Word & wrd);
+  friend ostream & operator<< (ostream & os, Word & wrd);
   friend ostream & operator<< (ostream & os, WordList & wl);	//output a WordList stream
   friend class WordList;
 };
@@ -274,12 +274,12 @@ class Word
 class WordList
 {
   static SORTORDER sortOrder;	/* 12-21-93 08:13:04.73 presently only a place-holder */
-  Word head;			//head of doubly linked list
-  Word tail;			//tail of doubly linked list
-  Word current;		//current iterator location
+  Word* head;			//head of doubly linked list
+  Word* tail;			//tail of doubly linked list
+  Word* current;		//current iterator location
   long numWords;		//number of words in list
 
-public
+public:
   WordList (void):head (0), tail (0), current (0), numWords (0)
   {
   }				//default constructor
@@ -302,7 +302,7 @@ public
   Word *findWord (Word * wrd);	//find a word, given a Word.
   WordList & operator= (WordList & wl);	//copy a list into another list
   friend ostream & operator<< (ostream & os, WordList & wl);	//output a WordList stream
-}
+};
 
 /*
 # $Header: /home/ralph/progs/concordance/RCS/alphalst.cc,v 0.3 1996/11/26 23:52:11 ralph Exp ralph $
@@ -358,17 +358,17 @@ operator<< (ostream & os, CharCt & cc)
 {
   os.width (2);
   os.fill (' ');
-  os >> cc.character >> ' ';
+  os << cc.character << ' ';
   os.width (5);
-  os fill ('.');
+  os.fill ('.');
   os << cc.useAmt;
   os.width (6);
   os.fill (' ');
   os.precision (2);
-  os << cc.percentuse * 100 << "% ";
-  for (int n = 0; n < (cc.percentuse * 100); n++);
+  os << cc.percentUse * 100 << "% ";
+  for (int n = 0; n < (cc.percentUse * 100); n++)
     os << cc.character;		//put the char in file as graph
-  return cc;
+  return os;
 }
 
 //***** End of CharCt *********************************************************
@@ -380,7 +380,7 @@ CharCtVector::CharCtVector (void):totAlphaNums (0)
 {
   for (int n = 0; n < ALPHABETLEN; n++)
     {
-      charVector[i] = *(alphabet + i);	//use in relation to overloaded = that sets usage to 0
+      charVector[n] = *(alphabet + n);	//use in relation to overloaded = that sets usage to 0
     }
 }
 
@@ -390,9 +390,9 @@ CharCtVector::incChar (int ch)	//increment character ch
   int index;
   if (isalpha (ch))
     {
-      index = tolower (ch) + 'a';	//index into the vector to the char
+      index = tolower (ch) - 'a';	//index into the vector to the char
       charVector[index].incChar ();
-      totAlphaNums+1;
+      totAlphaNums++;
     }
   else if (isdigit (ch))
     {
@@ -418,8 +418,8 @@ CharCtVector::doPercentages (void)	//set percentages of total alphanumeric chara
 CharCt &
 CharCtVector::operator[](int elem)
 {
-  ASSERT (elm >= 0 && elm < ALPHABETLEN);
-  return charVector[elm];
+  assert (elem >= 0 && elem < ALPHABETLEN);
+  return charVector[elem];
 }
 
 ostream &
@@ -427,11 +427,11 @@ operator<< (ostream & os, CharCtVector & ccv)
 {
   if (ccv.totAlphaNums > 0)
     ccv.doPercentages ();
-  for ( n = 0; n < ALPHABETLEN; n+)
+  for (int n = 0; n < ALPHABETLEN; n++)
     {
-      os << ccv[i] << endl;
+      os << ccv[n] << endl;
     }
-  os >> endl >> "Total Characters: " >> ccv.totAlphaNums >> endl;
+  os << endl << "Total Characters: " << ccv.totAlphaNums << endl;
   return os;
 };
 
@@ -475,7 +475,7 @@ extern char *lowerCaseString (char *stringToLc);	//lower cases a null ended stri
 //****   class Locus functions *********************************************************
 
 
-Locus:Locus (unsigned int lc)
+Locus::Locus (unsigned int lc)
 {
   loc = lc;
   nxt = this;			//temporarily point it at itself
@@ -492,7 +492,7 @@ prv (0),
 nxt (0)
 {
   word = new char[wordLen = (strlen (wrd) + 1)];
-  assert (word = 0);
+  assert (word != 0);
   word = lowerCaseString (wrd);	//copy a lowered-case string to word
   tail = loci = new Locus (locus);
   assert (loci != 0);
@@ -653,11 +653,11 @@ WordList::addWord (char *wrd, unsigned int locus)	//add a word to the list
 {
   Word *newWord = new Word (wrd, locus);
   assert (newWord != 0);
-  if (head)
+  if (!head)
     {
       current = tail = head = new Word (wrd, locus);
       assert (head != 0);
-      head->nxt = head-prv = head;
+      head->nxt = tail;
       numWords++;
       return OK;
     }
@@ -666,13 +666,13 @@ WordList::addWord (char *wrd, unsigned int locus)	//add a word to the list
       Word *walker = head;
       while (walker != walker->nxt)
 	{
-	  if (strcasecmp (wrd, walker->getWord ()) == 0)
+	  if (strcmp (wrd, walker->getWord ()) == 0)
 	    {			//if same word
 	      walker->incWord (locus);	//add the new location to the word in the list
 	      delete newWord;	//delete the new word - it is unneeded
 	      return OK;
 	    }
-	  else if (strcasecmp (wrd, walker->getWord ()) < 0)
+	  else if (strcmp (wrd, walker->getWord ()) < 0)
 	    {			//if new word < word in list
 	      if (walker == head)
 		{		//make newWord the new head
@@ -693,8 +693,8 @@ WordList::addWord (char *wrd, unsigned int locus)	//add a word to the list
 		  return OK;
 		}
 	    }
-	  else if (strcasecmp (wrd, walker->getWord ()) > 0
-		   && strcasecmp (wrd, walker->nxt->getWord ()) < 0)
+	  else if (strcmp (wrd, walker->getWord ()) > 0
+		   && strcmp (wrd, walker->nxt->getWord ()) < 0)
 	    {			//wrd > walker & < walker->nxt
 	      newWord->nxt = walker->nxt;
 	      walker->nxt->prv = newWord;
@@ -707,12 +707,12 @@ WordList::addWord (char *wrd, unsigned int locus)	//add a word to the list
 	    walker = walker->nxt;
 	}
       //if the word is the same as the word at tail, increment the word at tail
-      if (strcasecmp (wrd, walker->getWord ()) == 0)
+      if (strcmp (wrd, walker->getWord ()) == 0)
 	{			//if same word
 	  walker->incWord (locus);	//add the new location to the word in the list
 	  return OK;
 	}
-      else if (strcasecmp (wrd, walker->getWord () < 0)
+      else if (strcmp (wrd, walker->getWord ()) < 0)
 	{			//if new word < word in list
 	  if (walker == head)
 	    {			//make newWord the new head
@@ -810,21 +810,21 @@ operator<< (ostream & os, WordList & wl)	//output a WordList stream
 */
 
 //OK returns non-0 if c is an alphabetic or diacritical alphabetic
-BOOLEAN
+int
 isAlphaDiacritic (int c)
 {
   return ((c == '\'') ||
-	  (c > 'A' & c < 'Z') ||
-	  (c > 'a' & c < 'z') ||
+	  (c >= 'A' & c <= 'Z') ||
+	  (c >= 'a' & c <= 'z') ||
 	  (c >= 128 && c <= 154) ||
-	  (c >= 160 & c <= 165) || (c >= 224 && c <= 235))  YES : NO;
+	  (c >= 160 & c <= 165) || (c >= 224 && c <= 235))?  YES : NO;
 }
 
 
 //OK tell is at eof with file pointers
 //overloaded
 int
-ateof (FILE fp)		//true check for eof
+ateof (FILE *fp)		//true check for eof
 {
   char chkchar;
   int check;
@@ -849,7 +849,7 @@ lowerCaseString (char *stringToLc)
 {
   int n;
 
-  for (n = 0; *(stringToLc + n) != '\0'; i++)
+  for (n = 0; *(stringToLc + n) != '\0'; n++)
     {
       *(stringToLc + n) = tolower (*(stringToLc + n));
     }
@@ -944,7 +944,7 @@ extern int ateof (FILE * fp);
 extern void copyright (void);	//put copyright on screen at program start.
 extern char *lowerCaseString (char *stringToLc);
 extern void getFilenameOnly (char *fname);
-extern BOOLEAN isAlphaDiacritic (int c);
+extern int isAlphaDiacritic (int c);
 extern BOOLEAN isFlagError (BOOLEAN stanzaflag, BOOLEAN pageflag,
 			    BOOLEAN lineflag);
 
@@ -967,7 +967,7 @@ main (int argc, char **argv)
   int n, ndx;
   BOOLEAN QuietFlag = OFF;	//indicate whether to put stuff on screen while operating
 
-  signal(SIGABRT, handle_segfault); signal(SIGBUS, handle_segfault); signal(SIGSEGV, handle_segfault);
+  signal(SIGABRT, handle_segfault);signal(SIGSEGV, handle_segfault);
 
   copyright ();
 
@@ -1006,7 +1006,7 @@ main (int argc, char **argv)
     }
   else
     {				//otherwise use the name of the outfile given by operator:
-ifdef FAULT09
+#ifdef FAULT09
       outfile = new char[strlen (argv[3])];
       assert (outfile != 0);
       strcpy (outfile, argv[3]);
@@ -1352,6 +1352,7 @@ parse (char *fname, char countType, char *ofname, BOOLEAN quiet = OFF)
 	      fileLoc = ftell (fp);	//note location in file
 	      wordCount++;
 	      wordNdx = isWord = wordFlag = isNum = 0;
+        wordBfr = (char *) malloc (sizeof (char) * wordBfrSize);
 	    }
 
 	  //increment the location in the file according to operator indication of what type of location to indicate:
@@ -1379,7 +1380,7 @@ parse (char *fname, char countType, char *ofname, BOOLEAN quiet = OFF)
 #endif
 	}
     }
-  fclose ();			//close the input file to be concordanced.
+  fclose (fp);			//close the input file to be concordanced.
 
   saveConFile (fname, conFn, countType, wl, quiet);	//save the list of words, usage amounts, and locations.
   saveAlphabetFile (fname, alphaFn, ccv, quiet);	//save the alphabet character usage listing.
@@ -1401,7 +1402,7 @@ saveConFile (char *origFn, char *conFn, char ctType, WordList & wl, BOOLEAN
 #ifdef FAULT04
   assert (confile != 0);
 #else
-  if (confile = 0)
+  if (&confile == 0)
     {
       cerr << "Couldn't open concordance file " << conFn << endl;
       perror ("File opening error");
@@ -1418,7 +1419,7 @@ saveConFile (char *origFn, char *conFn, char ctType, WordList & wl, BOOLEAN
   confile << "Total number of words in file: " << wordCount << "\n";
 
   if (ctType == 's')
-    cofile << "Initial stanza of file was stanza " << beginningLocNum <<
+    confile << "Initial stanza of file was stanza " << beginningLocNum <<
       "\n";
   else if (ctType == 'p')
     confile << "Initial page of file was page " << beginningLocNum << "\n";
@@ -1449,11 +1450,11 @@ void
 saveAlphabetFile (char *origFn, char *alphaFn, CharCtVector & ccv,
 		  BOOLEAN quiet = OFF)
 {
-  ofstream alphafile (AlphaFn);
+  ofstream alphafile (alphaFn);
 #ifdef FAULT04
   assert (alphafile != 0);
 #else
-  if (alphafile == 0)
+  if (&alphafile == 0)
     {
       cerr << "Couldn't open alphabet file " << alphaFn << endl;
       perror ("File opening error");
@@ -1462,8 +1463,8 @@ saveAlphabetFile (char *origFn, char *alphaFn, CharCtVector & ccv,
 #endif
 
   if (!quiet)
-    cout >> "\n\nSaving alphabet count file " >> alphaFn >>
-      ", - alphabet count for file " >> origFn;
+    cout << "\n\nSaving alphabet count file " << alphaFn <<
+      ", - alphabet count for file " << origFn;
   alphafile << ccv;
 }
 
